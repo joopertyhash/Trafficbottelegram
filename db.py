@@ -85,10 +85,7 @@ def links():
         with sqlite3.connect("data.db") as con:
             cur = con.cursor()
             result = cur.execute('SELECT * FROM `channel`', ()).fetchall()
-            for row in result:
-                array.append(
-                    f"{row[0]}:{row[1]}")
-
+            array.extend(f"{row[0]}:{row[1]}" for row in result)
             return array
     except:
         pass

@@ -51,39 +51,39 @@ async def welcome(message):
     kb_links = keyboard.kb_links()
     if len(link_mas) > 1:
         links_text = 'каналы'
-    else:
-        links_text = f'*[канал](https://t.me/{convertList.split(":")[0]})*'
-    
-    if len(link_mas) > 1:
         links_text1 = 'Наши каналы'
     else:
+        links_text = f'*[канал](https://t.me/{convertList.split(":")[0]})*'
+
         links_text1 = f'*Наш [канал](https://t.me/{convertList.split(":")[0]})*'
-        
+
     me = await bot.get_me()
     ref = f'https://t.me/{me.username}?start='
-    
+
     links1 = ''
-    
+
     for links in link_mas:
         links = links.split(":")[0]
         links1 += f'https://t.me/{links}\n'
-        
-        
+
+
     if not db.user_exists(user_id):
         db.create_user(user_id)
-        if len(splited) == 2:
-            if user_id != int(splited[1]):
-                if db.user_exists(int(splited[1])):
-                    db.update_refers(user_id, splited[1])
-                    await bot.send_message(splited[1], 'У вас новый реферал', reply_markup=keyboard.delete_last)
-                    text = 'Ваш друг отправил вам'
-                    
-    
+        if (
+            len(splited) == 2
+            and user_id != int(splited[1])
+            and db.user_exists(int(splited[1]))
+        ):
+            db.update_refers(user_id, splited[1])
+            await bot.send_message(splited[1], 'У вас новый реферал', reply_markup=keyboard.delete_last)
+            text = 'Ваш друг отправил вам'
+
+
     referals = db.user_info(user_id, 2)
     balance = db.user_info(user_id, 3)
     await message.answer_sticker('CAACAgEAAxkBAAEEeG9iWF_JYBhO4NhWg-Am9QIc9Y00PgAC-QEAAq5M8UTUQz6LVFGQySME')
-    
-    
+
+
 
     if await check_sub(user_id) == False:
         await message.answer(f'*{text} несколько монет {coin}, чтобы получить их подпишитесь на {links_text} и нажмите на кнопку \n"🤖 Проверить".*', parse_mode="Markdown", reply_markup=kb_links, disable_web_page_preview=True)
@@ -95,29 +95,23 @@ async def welcome(message):
 @dp.message_handler(Command("admin"), state=None)
 async def admin(message: types.Message):
     if message.from_user.id == admin_id:
-        await message.answer(f'*Админ меню*', parse_mode="Markdown", reply_markup=keyboard.admin)
-    else:
-        pass
+        await message.answer(
+            '*Админ меню*', parse_mode="Markdown", reply_markup=keyboard.admin
+        )
 
     
 async def check_sub(user_id):
     array_list = []
     link_mas = db.links()
     for link in link_mas:
-        if '+' in link[0]:
-            link2 = link.split(":")[1]
-        else:
-            link2 = '@' + link.split(":")[0]
+        link2 = link.split(":")[1] if '+' in link[0] else '@' + link.split(":")[0]
         chat_member = (await bot.get_chat_member(chat_id=f'{link2}', user_id=user_id))
-        if chat_member['status'] == 'left' or chat_member['status'] == 'kicked':
+        if chat_member['status'] in ['left', 'kicked']:
             array_list.append(False)
         else:
             array_list.append(True)
 
-    if False in array_list:
-        return False
-    else:
-        return True
+    return False not in array_list
 
 
 
@@ -127,7 +121,6 @@ async def check_sub(user_id):
 
 @dp.callback_query_handler(text='check')
 async def check(message: types.Message):
-    text = 'Вам в подарок отправлено'
     coin = db.prj_info(2)
     min =  db.prj_info(1)
     link_mas = db.links()
@@ -135,27 +128,26 @@ async def check(message: types.Message):
     kb_links = keyboard.kb_links()
     me = await bot.get_me()
     ref = f'https://t.me/{me.username}?start='
-    
+
     links1 = ''
-    
+
     for links in link_mas:
         links = links.split(":")[0]
         links1 += f'https://t.me/{links}\n'
-    
+
     referals = db.user_info(message.from_user.id, 2)
     balance = db.user_info(message.from_user.id, 3)
     if len(link_mas) > 1:
         links_text = 'каналы'
-    else:
-        links_text = f'*[канал](https://t.me/{convertList.split(":")[0]})*'
-    
-    if len(link_mas) > 1:
         links_text1 = 'Наши каналы'
     else:
+        links_text = f'*[канал](https://t.me/{convertList.split(":")[0]})*'
+
         links_text1 = f'*Наш [канал](https://t.me/{convertList.split(":")[0]})*'
-    
+
     await bot.delete_message(message.from_user.id, message.message.message_id)
     if await check_sub(message.from_user.id) == False:
+        text = 'Вам в подарок отправлено'
         await bot.send_message(message.from_user.id, f'*{text} несколько монет {coin}, чтобы получить их подпишитесь на {links_text} и нажмите на кнопку \n"🤖 Проверить".*', parse_mode="Markdown", reply_markup=kb_links, disable_web_page_preview=True)
     else:
         await bot.send_message(message.from_user.id, f'*Привет!\n\nВы можете пригласить друзей и получить криптовалюту в качестве вознаграждения.\n\n👥 Ваша реферальная ссылка:\n{ref}{message.from_user.id}\n\nКол-во ваших подтверждённых рефералов: *`{referals}`* ✅\n\n💰 Ваш баланс: *`{balance} {coin}`*\nВывод станет доступен при накоплении *`{min} {coin}`* на балансе.\n\nВаш ID: *`{message.from_user.id}`*\n\n{links_text1} в Телеграмме:\n{links1}*', parse_mode="Markdown",reply_markup=keyboard.main_menu, disable_web_page_preview=True)
@@ -172,12 +164,11 @@ async def withdraw(message: types.Message):
     balance = db.user_info(message.from_user.id, 3)
     if await check_sub(message.from_user.id) == False:
         await check(message)
+    elif float(balance) >= float(min):
+        await bot.delete_message(message.from_user.id, message.message.message_id)
+        await bot.send_message(message.from_user.id, f'*Доступно для вывода *`{balance} {coin}`', parse_mode='Markdown', reply_markup=keyboard.withdraw1)
     else:
-        if float(balance) >= float(min):
-            await bot.delete_message(message.from_user.id, message.message.message_id)
-            await bot.send_message(message.from_user.id, f'*Доступно для вывода *`{balance} {coin}`', parse_mode='Markdown', reply_markup=keyboard.withdraw1)
-        else:
-            await bot.answer_callback_query(callback_query_id=message.id, show_alert=False, text="❌ У вас недостаточно средств")
+        await bot.answer_callback_query(callback_query_id=message.id, show_alert=False, text="❌ У вас недостаточно средств")
 
 @dp.callback_query_handler(text='withdraw_request')
 async def withdraw_request(message: types.Message):
@@ -224,9 +215,7 @@ async def inline_echo(inline_query: InlineQuery):
 
 def generate(length):
     letters_and_digits = string.ascii_letters + string.digits
-    crypt_rand_string = ''.join(secrets.choice(
-        letters_and_digits) for i in range(length))
-    return crypt_rand_string
+    return ''.join(secrets.choice(letters_and_digits) for _ in range(length))
 
 
 if __name__ == '__main__':
